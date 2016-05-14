@@ -1,9 +1,7 @@
-var ws = $.websocket("ws://localhost:8080", {
-	events: {
-        ink: function(e) { client.receive(e.data.sender, Int8Array.from($.map(e.data.data,function(el){return el}))); },
-        clear: function(e){ WILL.clearCanvas(); }
-    }
-});
+var ws = $.websocket("ws://localhost:8080", { events: {
+    ink: function(e){ client.receive(e.data.sender, Int8Array.from($.map(e.data.data,function(v){return v}))); },
+    clear: function(e){ WILL.clearCanvas(); }
+}});
 
 var WILL = {
 	backgroundColor: Module.Color.WHITE,
@@ -29,10 +27,8 @@ var WILL = {
 		this.viewArea = this.strokesLayer.bounds;
 
 		client.init();
-
 		this.writer = new Writer(client.id);
 		client.writers[client.id] = this.writer;
-
 		this.clearCanvas();
 	},
 
@@ -43,9 +39,9 @@ var WILL = {
 		$(document).on("mouseup", function(e) {self.endStroke(e);});
 		$(Module.canvas).on("mouseout", function(e) {if (self.writer.inputPhase) self.writer.abort();});
         
-        $(Module.canvas).on("touchstart", function(e) {self.beginTouch(e);});
-		$(Module.canvas).on("touchmove", function(e) {self.moveTouch(e);});
-		$(document).on("touchend", function(e) {self.endTouch(e);});
+        $(Module.canvas).on("touchstart", function(e) {self.beginStroke(e);});
+		$(Module.canvas).on("touchmove", function(e) {self.moveStroke(e);});
+		$(document).on("touchend", function(e) {self.endStroke(e);});
 	},
 
 	beginStroke: function(e) {
@@ -53,19 +49,13 @@ var WILL = {
 
 		this.writer.inputPhase = Module.InputPhase.Begin;
 
-		this.buildPath({x: e.clientX, y: e.clientY});
+        if( e.type == 'touchstart' ){
+            var t = e.originalEvent.targetTouches[0];
+            this.buildPath({x: t.clientX, y: t.clientY});
+        } else {
+            this.buildPath({x: e.clientX, y: e.clientY});
+        }
 		this.drawPath();
-
-		client.encoder.encodeComposeStyle(this.writer.strokeRenderer);
-		client.send();
-	},
-    
-    beginTouch: function(e) {
-		this.writer.inputPhase = Module.InputPhase.Begin;
-
-        var t = e.originalEvent.targetTouches[0];
-        this.buildPath({x: t.clientX, y: t.clientY});
-        this.drawPath();
 
 		client.encoder.encodeComposeStyle(this.writer.strokeRenderer);
 		client.send();
@@ -75,7 +65,13 @@ var WILL = {
 		if (!this.writer.inputPhase) return;
 
 		this.writer.inputPhase = Module.InputPhase.Move;
-		this.pointerPos = {x: e.clientX, y: e.clientY};
+        
+        if( e.type == 'touchmove' ){
+            var t = e.originalEvent.targetTouches[0];
+            this.pointerPos = {x: t.clientX, y: t.clientY};
+        } else {
+            this.pointerPos = {x: e.clientX, y: e.clientY};
+        }
 
 		if (WILL.frameID != WILL.canvas.frameID) {
 			var self = this;
@@ -88,35 +84,16 @@ var WILL = {
 			}, true);
 		}
 	},
-    
-	moveTouch: function(e) {
         
-		if (!this.writer.inputPhase) return;
-
-		this.writer.inputPhase = Module.InputPhase.Move;
-
-        var t = e.originalEvent.targetTouches[0];
-        this.pointerPos = {x: t.clientX, y: t.clientY};
-        
-		if (WILL.frameID != WILL.canvas.frameID) {
-			var self = this;
-
-			WILL.frameID = WILL.canvas.requestAnimationFrame(function() {
-				if (self.writer.inputPhase && self.writer.inputPhase == Module.InputPhase.Move) {
-					self.buildPath(self.pointerPos);
-					self.drawPath();
-				}
-			}, true);
-		}
-	},
-    
 	endStroke: function(e) {
 		if (!this.writer.inputPhase) return;
 
 		this.writer.inputPhase = Module.InputPhase.End;
 
-		this.buildPath({x: e.clientX, y: e.clientY});
-		this.drawPath();
+        if( e.type == 'mouseup' ){
+            this.buildPath({x: e.clientX, y: e.clientY});
+            this.drawPath();
+        }
 
 		client.encoder.encodeAdd([{
 			brush: this.brush,
@@ -129,24 +106,6 @@ var WILL = {
 		client.send();
 	},
     
-    endTouch: function(e) {
-		if (!this.writer.inputPhase) return;
-
-		this.writer.inputPhase = Module.InputPhase.End;
-
-        this.drawPath();
-
-		client.encoder.encodeAdd([{
-			brush: this.brush,
-			path: this.path,
-			width: this.writer.strokeRenderer.width,
-			color: this.writer.strokeRenderer.color,
-			ts: 0, tf: 1, randomSeed: 0,
-			blendMode: this.writer.strokeRenderer.blendMode
-		}]);
-		client.send();
-	},
-
 	buildPath: function(pos) {
 		if (this.writer.inputPhase == Module.InputPhase.Begin)
 			this.smoothener.reset();
@@ -179,7 +138,7 @@ var WILL = {
 	},
 
 	clear: function() {
-		ws.send('clear','hi');
+		ws.send('clear','');
 	},
 
 	clearCanvas: function() {
@@ -258,31 +217,24 @@ var client = {
 			this.writers[sender] = writer;
 		}
 
-		Module.writeBytes(data, function(int64Ptr) {
-			this.decoder.decode(writer, int64Ptr);
-		}, this);
+		Module.writeBytes(data, function(int64Ptr){ this.decoder.decode(writer, int64Ptr); }, this);
 	},
 
 	callbacksHandlerImplementation: {
-		onComposeStyle: function(writer, style) {
-			writer.strokeRenderer.configure(style);
-		},
+		onComposeStyle: function(writer, style) { writer.strokeRenderer.configure(style); },
 
 		onComposePathPart: function(writer, path, endStroke) {
 			writer.compose(path, endStroke);
 			writer.refresh();
 		},
 
-		onComposeAbort: function(writer) {
-			writer.abort();
-		},
+		onComposeAbort: function(writer) { writer.abort(); },
 
 		onAdd: function(writer, strokes) {
 			strokes.forEach(function(stroke) {
 				WILL.strokes.push(stroke);
 				writer.strokeRenderer.blendStroke(WILL.strokesLayer, stroke.blendMode);
 			}, this);
-
 			WILL.refresh();
 		},
 

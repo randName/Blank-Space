@@ -1,14 +1,18 @@
 from SimpleWebSocketServer import SimpleWebSocketServer, WebSocket
 
-class SimpleEcho(WebSocket):
+class Broadcaster(WebSocket):
     def handleMessage(self):
-        conn = self.server.connections.values().index(self)
-        lel = self.data.replace('{"data"','{"sender":%s,"data"'%conn)
-        for client in self.server.connections.itervalues():
+        conns = self.server.connections.values()
+        lel = self.data.replace('{"data"','{"sender":%s,"data"' % conns.index(self))
+        for client in conns:
             client.sendMessage(lel)
 
+PORT = 8080
 try:
-    server = SimpleWebSocketServer('', 8080, SimpleEcho)
+    server = SimpleWebSocketServer('', PORT, Broadcaster)
+    print "Running WebSocket server on %s" % PORT
     server.serveforever()
 except KeyboardInterrupt:
-    server.socket.close()
+    print "Stopping server"
+finally:
+    server.close()
