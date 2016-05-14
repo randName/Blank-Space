@@ -1,4 +1,4 @@
-var ws = $.websocket("ws://localhost:8080/listen", {
+var ws = $.websocket("ws://localhost:8080", {
 	events: {
         ink: function(e) { client.receive(e.data.sender, Int8Array.from($.map(e.data.data,function(el){return el}))); },
         clear: function(e){ WILL.clearCanvas(); }
@@ -42,6 +42,10 @@ var WILL = {
 		$(Module.canvas).on("mousemove", function(e) {self.moveStroke(e);});
 		$(document).on("mouseup", function(e) {self.endStroke(e);});
 		$(Module.canvas).on("mouseout", function(e) {if (self.writer.inputPhase) self.writer.abort();});
+        
+        $(Module.canvas).on("touchstart", function(e) {self.beginTouch(e);});
+		$(Module.canvas).on("touchmove", function(e) {self.moveTouch(e);});
+		$(document).on("touchend", function(e) {self.endTouch(e);});
 	},
 
 	beginStroke: function(e) {
@@ -51,6 +55,17 @@ var WILL = {
 
 		this.buildPath({x: e.clientX, y: e.clientY});
 		this.drawPath();
+
+		client.encoder.encodeComposeStyle(this.writer.strokeRenderer);
+		client.send();
+	},
+    
+    beginTouch: function(e) {
+		this.writer.inputPhase = Module.InputPhase.Begin;
+
+        var t = e.originalEvent.targetTouches[0];
+        this.buildPath({x: t.clientX, y: t.clientY});
+        this.drawPath();
 
 		client.encoder.encodeComposeStyle(this.writer.strokeRenderer);
 		client.send();
@@ -73,7 +88,28 @@ var WILL = {
 			}, true);
 		}
 	},
+    
+	moveTouch: function(e) {
+        
+		if (!this.writer.inputPhase) return;
 
+		this.writer.inputPhase = Module.InputPhase.Move;
+
+        var t = e.originalEvent.targetTouches[0];
+        this.pointerPos = {x: t.clientX, y: t.clientY};
+        
+		if (WILL.frameID != WILL.canvas.frameID) {
+			var self = this;
+
+			WILL.frameID = WILL.canvas.requestAnimationFrame(function() {
+				if (self.writer.inputPhase && self.writer.inputPhase == Module.InputPhase.Move) {
+					self.buildPath(self.pointerPos);
+					self.drawPath();
+				}
+			}, true);
+		}
+	},
+    
 	endStroke: function(e) {
 		if (!this.writer.inputPhase) return;
 
@@ -81,6 +117,24 @@ var WILL = {
 
 		this.buildPath({x: e.clientX, y: e.clientY});
 		this.drawPath();
+
+		client.encoder.encodeAdd([{
+			brush: this.brush,
+			path: this.path,
+			width: this.writer.strokeRenderer.width,
+			color: this.writer.strokeRenderer.color,
+			ts: 0, tf: 1, randomSeed: 0,
+			blendMode: this.writer.strokeRenderer.blendMode
+		}]);
+		client.send();
+	},
+    
+    endTouch: function(e) {
+		if (!this.writer.inputPhase) return;
+
+		this.writer.inputPhase = Module.InputPhase.End;
+
+        this.drawPath();
 
 		client.encoder.encodeAdd([{
 			brush: this.brush,
@@ -130,7 +184,6 @@ var WILL = {
 
 	clearCanvas: function() {
 		this.strokes = new Array();
-
 		this.strokesLayer.clear(this.backgroundColor);
 		this.canvas.clear(this.backgroundColor);
 	}
@@ -185,7 +238,6 @@ Writer.prototype.abort = function() {
 }
 
 var client = {
-	//name: window.location.pathname.split("/").pop(),
 	writers: [],
 
 	init: function() {
@@ -213,19 +265,15 @@ var client = {
 
 	callbacksHandlerImplementation: {
 		onComposeStyle: function(writer, style) {
-			if (writer.id == client.id) return;
 			writer.strokeRenderer.configure(style);
 		},
 
 		onComposePathPart: function(writer, path, endStroke) {
-			if (writer.id == client.id) return;
-
 			writer.compose(path, endStroke);
 			writer.refresh();
 		},
 
 		onComposeAbort: function(writer) {
-			if (writer.id == client.id) return;
 			writer.abort();
 		},
 
@@ -249,8 +297,6 @@ var client = {
 var env = { width: $(document).width(), height: $(document).height() };
 
 Module.addPostScript(function() {
-	Module.InkDecoder.getStrokeBrush = function(paint, writer) {
-		return WILL.brush;
-	}
+	Module.InkDecoder.getStrokeBrush = function(paint, writer) { return WILL.brush; }
 	WILL.init(env.width, env.height);
 });
