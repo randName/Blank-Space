@@ -4,28 +4,22 @@
 	<meta charset="utf-8">
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-	<title>Lulz</title>
-	<script src="jquery.min.js"></script>
-
+	<title>Ink!</title>
+    <script src="jquery.min.js"></script>
 	<script type="text/javascript" src="js.ext.js"></script>
 	<script type="text/javascript" src="js.ext.dom.js"></script>
-
-	<script type="text/javascript" src="server.js"></script>
+	<script type="text/javascript" src="Module.js"></script>
+	<script async type="text/javascript" src="WacomInkEngine.js"></script>
+    <script type="text/javascript" src="jquery.json.min.js"></script>
+    <script type="text/javascript" src="jquery.websocket.js"></script>
 
 	<style type="text/css">
 		body {position: relative; overflow: hidden; margin: 0; padding: 0; background-color: #252525; color: white;}
 		canvas {border: 0px none;}
-		h2, p {margin-left: 20px;}
-
-		body div:first-child {overflow: hidden;}
-		iframe {width: 30%; height: 500px; border: 0px none;}
 	</style>
 </head>
 <body>
-	<div>
-		<iframe id="UserA" name="UserA" src="UserA.html"></iframe>
-	 	<iframe id="UserB" name="UserB" src="UserB.html"></iframe>
-        <iframe id="UserC" name="UserC" src="UserC.html"></iframe>
-	 </div>
+	<canvas id="canvas" oncontextmenu="WILL.clear(); event.preventDefault();"></canvas>
+    <script type="text/javascript" src="app.js"></script>
 </body>
 </html>
