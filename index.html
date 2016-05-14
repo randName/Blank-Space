@@ -6,16 +6,19 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 	<title>Lulz</title>
 	<script src="jquery.min.js"></script>
-	<link rel = 
 	<script type="text/javascript" src="js.ext.js"></script>
 	<script type="text/javascript" src="js.ext.dom.js"></script>
+	<script type="text/javascript" src="bootstrap/js/*"></script>
 	<script type="text/javascript" src="server.js"></script>
 	<script type="text/javascript" src="Module.js"></script>
 	<script async type="text/javascript" src="WacomInkEngine.js"></script>
   <script type="text/javascript" src="app.js"></script>
 
 	<link rel="stylesheet" type="text/css" href="painting.css">
-  
+	<link rel="stylesheet" type="text/css" href="bootstrap/css/bootstrap.min.css">
+	<link rel="stylesheet" type="text/css" href="bootstrap/css/bootstrap-theme.min.css">
+	<link rel="stylesheet" type="text/css" href="animate.css">
+
 
 	<style type="text/css">
 
@@ -23,9 +26,13 @@
 </head>
 <body>
 	<div class="cover">
-		<div class="header"> HELLO</div>
-		<iframe id="UserA" name="UserA" src="UserA.html"></iframe>
-
+		<div class="header container-fluid animated slideInDown">
+			<div class="logo col-lg-1"></div>
+			<div class="button col-lg-offset-2 col-lg-1">2D</div>
+			<div class="button threed col-lg-1" >3D</div>
+			<div class="button col-lg-offset-4 threed col-lg-2" >Export</div>
+		</div>
+		<iframe id="UserA" class="animated slideInUp" name="UserA" src="UserA.html"></iframe>
 	 </div>
 </body>
 </html>

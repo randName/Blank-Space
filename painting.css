@@ -16,6 +16,8 @@
   width: 100%; 
   height: 10vh; 
   border: 0px none;
+  background-color: #3498db;
+  color: white;
 }
 body{
   margin:0;
@@ -32,13 +34,56 @@ h2, p {
   margin-left: 20px;
 }
 
-body div:first-child {
-  overflow: hidden;
-}
 iframe {
   position: absolute;
   bottom:0;
   width: 100%; 
   height: 90vh; 
   border: 0px none;
+}
+.logo{
+  overflow: hidden;
+  margin-top:5px; 
+  background-image: url("quillr.png");
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: cover;
+  height: 100%;
+}
+.button{
+  border: 2px solid white;
+  color: white;
+  border-radius: 50px;
+  padding: 15px 80px;
+  background: transparent;
+  position: relative;
+  overflow: hidden;
+  margin-top: 10px;
+  text-align: center;
+}
+.button:hover{
+  border: 2px solid white;
+  color: #3498db;
+
+  border-radius: 50px;
+  background: white;
+  position: relative;
+  overflow: hidden;
+  margin-top: 10px;
+}
+
+.active{
+  border: 2px solid white;
+  color: #3498db;
+
+  border-radius: 50px;
+  background: white;
+  position: relative;
+  overflow: hidden;
+  margin-top: 10px;
+}
+
+.threed{
+  margin-left: 12px;
+  margin-right: 12px;
 }
