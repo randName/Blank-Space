@@ -1,4 +1,4 @@
-var ws = $.websocket("ws://localhost:8080", { events: {
+var ws = $.websocket("ws://"+location.host.split(':')[0]+":8080", { events: {
     ink: function(e){ client.receive(e.data.sender, Int8Array.from($.map(e.data.data,function(v){return v}))); },
     clear: function(e){ WILL.clearCanvas(); }
 }});
@@ -205,7 +205,8 @@ var client = {
 	},
 
 	send: function(compose) {
-        ws.send('ink',{data:Module.readBytes(this.encoder.getBytes()),'compose':compose});
+        var b = Module.readBytes(this.encoder.getBytes());
+        ws.send('ink',{data:b,'compose':compose});
 		this.encoder.reset();
 	},
 

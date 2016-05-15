@@ -4,6 +4,7 @@ class Broadcaster(WebSocket):
     def handleMessage(self):
         conns = self.server.connections.values()
         lel = self.data.replace('{"data"','{"sender":%s,"data"' % conns.index(self))
+        # print lel
         for client in conns:
             client.sendMessage(lel)
 
